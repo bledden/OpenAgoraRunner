@@ -1,0 +1,2 @@
+httpx>=0.26.0
+structlog>=24.1.0
