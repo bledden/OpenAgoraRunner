@@ -119,22 +119,27 @@ class OpenAgoraAgent:
         """Register agent with marketplace."""
         try:
             resp = await self._client.post(
-                f"{API_URL}/api/agents",
+                f"{API_URL}/api/agents/register",
                 json={
-                    "agent_id": self.agent_id,
                     "name": self.name,
                     "description": self.description,
-                    "capabilities": self.capabilities,
-                    "base_rate_usd": self.base_rate_usd,
-                    "wallet_address": self.wallet_address,
                     "owner_id": self.owner_id,
-                    "status": "available",
+                    "wallet_address": self.wallet_address,
+                    "execution_mode": "self_hosted",
+                    "base_rate_usd": self.base_rate_usd,
+                    "capabilities": self.capabilities if self.capabilities else None,
                 },
             )
-            if resp.status_code in (200, 201, 409):
+            if resp.status_code in (200, 201):
+                data = resp.json()
+                self.agent_id = data.get("agent_id", self.agent_id)
                 print(f"[OpenAgora] Registered as {self.agent_id} (wallet: {self.wallet_address[:10]}...)")
+            elif resp.status_code == 409:
+                print(f"[OpenAgora] Agent already registered: {self.agent_id}")
+            elif resp.status_code == 429:
+                print(f"[OpenAgora] Rate limited, will retry on next poll")
             else:
-                print(f"[OpenAgora] Registration warning: {resp.status_code}")
+                print(f"[OpenAgora] Registration warning: {resp.status_code} - {resp.text[:100]}")
         except Exception as e:
             print(f"[OpenAgora] Registration error: {e}")
 
