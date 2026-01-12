@@ -16,13 +16,15 @@ Required env vars:
 
 Optional:
 - AGENT_POLL_INTERVAL: Seconds between polls (default: 30)
+- AGENTS_CONFIG: Path to agents.json file (default: ./agents.json)
 """
 
 import os
+import json
 import asyncio
-import time
+import hashlib
 from dataclasses import dataclass, field
-from datetime import datetime
+from pathlib import Path
 import httpx
 import structlog
 
@@ -40,6 +42,7 @@ logger = structlog.get_logger()
 API_URL = os.getenv("BAZAAR_API_URL", "https://open-agora-production.up.railway.app")
 FIREWORKS_API_KEY = os.getenv("FIREWORKS_API_KEY")
 POLL_INTERVAL = int(os.getenv("AGENT_POLL_INTERVAL", "30"))
+AGENTS_CONFIG = os.getenv("AGENTS_CONFIG", "./agents.json")
 
 
 @dataclass
@@ -55,48 +58,47 @@ class AgentConfig:
     jobs_bid_on: set = field(default_factory=set)
 
 
-# Built-in agents
-AGENTS = [
-    AgentConfig(
-        agent_id="agent_24a17a8f",
-        name="SchemaArchitect",
-        description="Expert in database schema design, API architecture, and data modeling",
-        model="accounts/fireworks/models/llama-v3p3-70b-instruct",
-        keywords={
-            "schema": 1.0, "database": 1.0, "api": 1.0, "graphql": 1.0,
-            "postgresql": 0.9, "mysql": 0.9, "mongodb": 0.9,
-            "data model": 0.9, "erd": 0.8, "normalization": 0.8,
-            "rest": 0.8, "openapi": 0.8, "swagger": 0.8,
-        },
-        capabilities={"api_design": 0.95, "database_design": 0.95, "data_modeling": 0.9},
-    ),
-    AgentConfig(
-        agent_id="agent_7b3f9e2c",
-        name="AnomalyHunter",
-        description="Specialist in anomaly detection, monitoring, and root cause analysis",
-        model="accounts/fireworks/models/llama-v3p3-70b-instruct",
-        keywords={
-            "anomaly": 1.0, "detection": 1.0, "monitoring": 1.0,
-            "alert": 0.9, "metric": 0.9, "observability": 0.9,
-            "root cause": 0.9, "incident": 0.8, "sre": 0.8,
-            "prometheus": 0.8, "grafana": 0.8, "datadog": 0.8,
-        },
-        capabilities={"anomaly_detection": 0.95, "monitoring": 0.9, "root_cause_analysis": 0.9},
-    ),
-    AgentConfig(
-        agent_id="agent_5d8c1a4e",
-        name="CodeReviewer",
-        description="Expert code reviewer focusing on security, performance, and best practices",
-        model="accounts/fireworks/models/llama-v3p3-70b-instruct",
-        keywords={
-            "code review": 1.0, "review": 0.9, "security": 0.9,
-            "vulnerability": 0.9, "best practice": 0.8, "refactor": 0.8,
-            "performance": 0.8, "optimization": 0.8, "testing": 0.8,
-            "lint": 0.7, "static analysis": 0.8,
-        },
-        capabilities={"code_review": 0.95, "security_review": 0.9, "testing": 0.85},
-    ),
-]
+def generate_agent_id(name: str) -> str:
+    """Generate a deterministic agent ID from name."""
+    hash_input = name.lower().replace(" ", "_")
+    hash_hex = hashlib.md5(hash_input.encode()).hexdigest()[:8]
+    return f"agent_{hash_hex}"
+
+
+def load_agents_from_config() -> list[AgentConfig]:
+    """Load agents from JSON config file."""
+    config_path = Path(AGENTS_CONFIG)
+    if not config_path.exists():
+        logger.warning("agents_config_not_found", path=AGENTS_CONFIG)
+        return []
+
+    try:
+        with open(config_path) as f:
+            agents_data = json.load(f)
+
+        agents = []
+        for data in agents_data:
+            # Generate agent_id from name if not provided
+            agent_id = data.get("agent_id") or generate_agent_id(data["name"])
+            agents.append(AgentConfig(
+                agent_id=agent_id,
+                name=data["name"],
+                description=data["description"],
+                model=data.get("model", "accounts/fireworks/models/llama-v3p3-70b-instruct"),
+                keywords=data.get("keywords", {}),
+                capabilities=data.get("capabilities", {}),
+                base_rate_usd=data.get("base_rate_usd", 0.02),
+            ))
+
+        logger.info("loaded_agents_from_config", count=len(agents), path=AGENTS_CONFIG)
+        return agents
+    except Exception as e:
+        logger.error("failed_to_load_agents_config", error=str(e))
+        return []
+
+
+# Load agents from config file
+AGENTS = load_agents_from_config()
 
 
 class OpenAgoraClient:
@@ -191,6 +193,39 @@ class OpenAgoraClient:
                 return False
         except Exception as e:
             logger.error("result_submit_failed", job_id=job_id, error=str(e))
+            return False
+
+    async def register_agent(self, agent: "AgentConfig") -> bool:
+        """Register an agent with the marketplace (idempotent)."""
+        try:
+            resp = await self.client.post(
+                f"{self.base_url}/api/agents",
+                json={
+                    "agent_id": agent.agent_id,
+                    "name": agent.name,
+                    "description": agent.description,
+                    "capabilities": agent.capabilities,
+                    "pricing": {"base_rate_usd": agent.base_rate_usd},
+                    "status": "available",
+                },
+            )
+            if resp.status_code in (200, 201):
+                logger.info("agent_registered", agent_id=agent.agent_id, name=agent.name)
+                return True
+            elif resp.status_code == 409:
+                # Already exists, that's fine
+                logger.debug("agent_already_exists", agent_id=agent.agent_id)
+                return True
+            else:
+                logger.warning(
+                    "agent_registration_failed",
+                    agent_id=agent.agent_id,
+                    status=resp.status_code,
+                    body=resp.text[:200],
+                )
+                return False
+        except Exception as e:
+            logger.error("agent_registration_error", agent_id=agent.agent_id, error=str(e))
             return False
 
 
@@ -302,6 +337,10 @@ class MultiAgentRunner:
             agents=[a.name for a in AGENTS],
             poll_interval=POLL_INTERVAL,
         )
+
+        # Auto-register all agents from config
+        for agent in self.agents.values():
+            await self.api.register_agent(agent)
 
         self.running = True
 

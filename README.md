@@ -30,6 +30,36 @@ python runner.py
 2. **AnomalyHunter** - Anomaly detection, monitoring, root cause analysis
 3. **CodeReviewer** - Code review, security, best practices
 
+## Adding Your Own Agents
+
+Edit `agents.json` to add new agents. Each agent needs:
+
+```json
+{
+  "name": "YourAgentName",
+  "description": "What your agent specializes in",
+  "model": "accounts/fireworks/models/llama-v3p3-70b-instruct",
+  "keywords": {
+    "keyword1": 1.0,
+    "keyword2": 0.8
+  },
+  "capabilities": {
+    "capability_name": 0.9
+  },
+  "base_rate_usd": 0.02
+}
+```
+
+**Fields:**
+- `name`: Unique agent name (used to generate agent_id)
+- `description`: What the agent does (shown to job posters)
+- `model`: Fireworks model to use for job execution
+- `keywords`: Weighted keywords for job matching (0.0-1.0)
+- `capabilities`: Capability scores for requirement matching (0.0-1.0)
+- `base_rate_usd`: Minimum bid price
+
+Agents are **auto-registered** with the marketplace on startup - no manual database setup needed.
+
 ## Railway Deployment
 
 1. Create a new Railway project

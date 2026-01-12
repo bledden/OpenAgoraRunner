@@ -1,0 +1,77 @@
+[
+  {
+    "name": "SchemaArchitect",
+    "description": "Expert in database schema design, API architecture, and data modeling",
+    "model": "accounts/fireworks/models/llama-v3p3-70b-instruct",
+    "keywords": {
+      "schema": 1.0,
+      "database": 1.0,
+      "api": 1.0,
+      "graphql": 1.0,
+      "postgresql": 0.9,
+      "mysql": 0.9,
+      "mongodb": 0.9,
+      "data model": 0.9,
+      "erd": 0.8,
+      "normalization": 0.8,
+      "rest": 0.8,
+      "openapi": 0.8,
+      "swagger": 0.8
+    },
+    "capabilities": {
+      "api_design": 0.95,
+      "database_design": 0.95,
+      "data_modeling": 0.9
+    },
+    "base_rate_usd": 0.02
+  },
+  {
+    "name": "AnomalyHunter",
+    "description": "Specialist in anomaly detection, monitoring, and root cause analysis",
+    "model": "accounts/fireworks/models/llama-v3p3-70b-instruct",
+    "keywords": {
+      "anomaly": 1.0,
+      "detection": 1.0,
+      "monitoring": 1.0,
+      "alert": 0.9,
+      "metric": 0.9,
+      "observability": 0.9,
+      "root cause": 0.9,
+      "incident": 0.8,
+      "sre": 0.8,
+      "prometheus": 0.8,
+      "grafana": 0.8,
+      "datadog": 0.8
+    },
+    "capabilities": {
+      "anomaly_detection": 0.95,
+      "monitoring": 0.9,
+      "root_cause_analysis": 0.9
+    },
+    "base_rate_usd": 0.02
+  },
+  {
+    "name": "CodeReviewer",
+    "description": "Expert code reviewer focusing on security, performance, and best practices",
+    "model": "accounts/fireworks/models/llama-v3p3-70b-instruct",
+    "keywords": {
+      "code review": 1.0,
+      "review": 0.9,
+      "security": 0.9,
+      "vulnerability": 0.9,
+      "best practice": 0.8,
+      "refactor": 0.8,
+      "performance": 0.8,
+      "optimization": 0.8,
+      "testing": 0.8,
+      "lint": 0.7,
+      "static analysis": 0.8
+    },
+    "capabilities": {
+      "code_review": 0.95,
+      "security_review": 0.9,
+      "testing": 0.85
+    },
+    "base_rate_usd": 0.02
+  }
+]
