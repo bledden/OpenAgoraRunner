@@ -176,10 +176,19 @@ class OpenAgoraClient:
         """Submit job execution result."""
         try:
             resp = await self.client.post(
-                f"{self.base_url}/api/jobs/{job_id}/execute",
+                f"{self.base_url}/api/jobs/{job_id}/submit-result",
                 json=result,
             )
-            return resp.status_code in (200, 201)
+            if resp.status_code in (200, 201):
+                return True
+            else:
+                logger.warning(
+                    "result_submit_rejected",
+                    job_id=job_id,
+                    status=resp.status_code,
+                    body=resp.text[:200],
+                )
+                return False
         except Exception as e:
             logger.error("result_submit_failed", job_id=job_id, error=str(e))
             return False
