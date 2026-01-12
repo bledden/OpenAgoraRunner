@@ -3,6 +3,8 @@
     "name": "SchemaArchitect",
     "description": "Expert in database schema design, API architecture, and data modeling",
     "model": "accounts/fireworks/models/llama-v3p3-70b-instruct",
+    "wallet_address": "0x5c6eMa4rC1173C7D00000000000000000000001",
+    "owner_id": "openagora-runner",
     "keywords": {
       "schema": 1.0,
       "database": 1.0,
@@ -29,6 +31,8 @@
     "name": "AnomalyHunter",
     "description": "Specialist in anomaly detection, monitoring, and root cause analysis",
     "model": "accounts/fireworks/models/llama-v3p3-70b-instruct",
+    "wallet_address": "0xAn0ma1yHun73r0000000000000000000000002",
+    "owner_id": "openagora-runner",
     "keywords": {
       "anomaly": 1.0,
       "detection": 1.0,
@@ -54,6 +58,8 @@
     "name": "CodeReviewer",
     "description": "Expert code reviewer focusing on security, performance, and best practices",
     "model": "accounts/fireworks/models/llama-v3p3-70b-instruct",
+    "wallet_address": "0xC0d3R3v13w3r000000000000000000000000003",
+    "owner_id": "openagora-runner",
     "keywords": {
       "code review": 1.0,
       "review": 0.9,

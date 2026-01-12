@@ -55,6 +55,8 @@ class AgentConfig:
     keywords: dict[str, float]  # keyword -> weight (0-1)
     capabilities: dict[str, float]  # capability -> score (0-1)
     base_rate_usd: float = 0.02
+    wallet_address: str = ""  # x402 payment address
+    owner_id: str = ""  # Owner identifier
     jobs_bid_on: set = field(default_factory=set)
 
 
@@ -80,6 +82,8 @@ def load_agents_from_config() -> list[AgentConfig]:
         for data in agents_data:
             # Generate agent_id from name if not provided
             agent_id = data.get("agent_id") or generate_agent_id(data["name"])
+            # Generate wallet address if not provided
+            wallet = data.get("wallet_address") or f"0x{hashlib.sha256(data['name'].encode()).hexdigest()[:40]}"
             agents.append(AgentConfig(
                 agent_id=agent_id,
                 name=data["name"],
@@ -88,6 +92,8 @@ def load_agents_from_config() -> list[AgentConfig]:
                 keywords=data.get("keywords", {}),
                 capabilities=data.get("capabilities", {}),
                 base_rate_usd=data.get("base_rate_usd", 0.02),
+                wallet_address=wallet,
+                owner_id=data.get("owner_id", "openagora-runner"),
             ))
 
         logger.info("loaded_agents_from_config", count=len(agents), path=AGENTS_CONFIG)
@@ -205,7 +211,9 @@ class OpenAgoraClient:
                     "name": agent.name,
                     "description": agent.description,
                     "capabilities": agent.capabilities,
-                    "pricing": {"base_rate_usd": agent.base_rate_usd},
+                    "base_rate_usd": agent.base_rate_usd,
+                    "wallet_address": agent.wallet_address,
+                    "owner_id": agent.owner_id,
                     "status": "available",
                 },
             )

@@ -54,6 +54,8 @@ class OpenAgoraAgent:
         capabilities: dict[str, float] | None = None,
         base_rate_usd: float = 0.02,
         poll_interval: int = 30,
+        wallet_address: str | None = None,
+        owner_id: str | None = None,
     ):
         self.name = name
         self.description = description
@@ -66,6 +68,10 @@ class OpenAgoraAgent:
         # Generate deterministic agent_id
         hash_input = name.lower().replace(" ", "_")
         self.agent_id = f"agent_{hashlib.md5(hash_input.encode()).hexdigest()[:8]}"
+
+        # Generate wallet if not provided
+        self.wallet_address = wallet_address or f"0x{hashlib.sha256(name.encode()).hexdigest()[:40]}"
+        self.owner_id = owner_id or "self-hosted"
 
         self._client = httpx.AsyncClient(timeout=60.0)
         self._running = False
@@ -119,12 +125,14 @@ class OpenAgoraAgent:
                     "name": self.name,
                     "description": self.description,
                     "capabilities": self.capabilities,
-                    "pricing": {"base_rate_usd": self.base_rate_usd},
+                    "base_rate_usd": self.base_rate_usd,
+                    "wallet_address": self.wallet_address,
+                    "owner_id": self.owner_id,
                     "status": "available",
                 },
             )
             if resp.status_code in (200, 201, 409):
-                print(f"[OpenAgora] Registered as {self.agent_id}")
+                print(f"[OpenAgora] Registered as {self.agent_id} (wallet: {self.wallet_address[:10]}...)")
             else:
                 print(f"[OpenAgora] Registration warning: {resp.status_code}")
         except Exception as e:
