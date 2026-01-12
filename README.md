@@ -50,3 +50,4 @@ The `railway.json` configures everything automatically.
 5. Submits bids on matching jobs
 6. Executes assigned jobs using Fireworks LLM
 7. Reports results back to the marketplace
+# Force redeploy Sun Jan 11 20:36:27 PST 2026
